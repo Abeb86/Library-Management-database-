@@ -1,0 +1,371 @@
+CREATE DATABASE IF NOT EXISTS LibraryDB2 
+CHARACTER SET utf8mb4 
+COLLATE utf8mb4_unicode_ci;
+USE LibraryDB2;
+
+DROP TABLE IF EXISTS Donates;
+DROP TABLE IF EXISTS Donation;
+DROP TABLE IF EXISTS Report;
+DROP TABLE IF EXISTS LogEntry;
+DROP TABLE IF EXISTS Notification;
+DROP TABLE IF EXISTS BookReview;
+DROP TABLE IF EXISTS PaymentAmount;
+DROP TABLE IF EXISTS Payment;
+DROP TABLE IF EXISTS Fine;
+DROP TABLE IF EXISTS Loan;
+DROP TABLE IF EXISTS BookCopy;
+DROP TABLE IF EXISTS VendorPhoneNumber;
+DROP TABLE IF EXISTS Vendor;
+DROP TABLE IF EXISTS RoomReservation;
+DROP TABLE IF EXISTS Shelf;
+DROP TABLE IF EXISTS Location;
+DROP TABLE IF EXISTS Room;
+DROP TABLE IF EXISTS RoomCapacity;
+DROP TABLE IF EXISTS Writes;
+DROP TABLE IF EXISTS Author;
+DROP TABLE IF EXISTS Price;
+DROP TABLE IF EXISTS Book;
+DROP TABLE IF EXISTS PublisherWebsite;
+DROP TABLE IF EXISTS PublisherPhoneNumber;
+DROP TABLE IF EXISTS Publisher;
+DROP TABLE IF EXISTS Category;
+DROP TABLE IF EXISTS LibraryCard;
+DROP TABLE IF EXISTS MemberPhoneNumber;
+DROP TABLE IF EXISTS Member;
+DROP TABLE IF EXISTS StaffPhoneNumber;
+DROP TABLE IF EXISTS Staff;
+DROP TABLE IF EXISTS UserReg;
+
+
+CREATE TABLE UserReg (
+  UserId INT AUTO_INCREMENT PRIMARY KEY,
+  Username VARCHAR(50) NOT NULL UNIQUE,
+  Email VARCHAR(100) NOT NULL,
+  Password VARCHAR(255) NOT NULL,
+  RegistrationDate DATE,
+  ZipCode VARCHAR(20) NOT NULL,
+  StreetNo VARCHAR(50) NOT NULL,
+  BuildingName VARCHAR(100) NOT NULL,
+  Role ENUM('staff','member') NOT NULL,
+  AccountStatus ENUM('active','suspended','closed') DEFAULT 'active'
+) ENGINE=InnoDB;
+
+
+CREATE TABLE Staff (
+  StaffId INT AUTO_INCREMENT PRIMARY KEY,
+  H_Staff VARCHAR(50),
+  Essn VARCHAR(20),
+  FirstName VARCHAR(50) NOT NULL,
+  LastName VARCHAR(50) NOT NULL,
+  Dept VARCHAR(50),
+  Position VARCHAR(50),
+  HireDate DATE,
+  Email VARCHAR(100),
+  UserId INT,
+  FOREIGN KEY (UserId) REFERENCES UserReg(UserId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+CREATE TABLE StaffPhoneNumber (
+  StaffId INT NOT NULL,
+  PhoneNumber VARCHAR(20) NOT NULL,
+  PRIMARY KEY (StaffId, PhoneNumber),
+  FOREIGN KEY (StaffId) REFERENCES Staff(StaffId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+CREATE TABLE Member (
+  MemberId INT AUTO_INCREMENT PRIMARY KEY,
+  MemberNumber VARCHAR(50) UNIQUE,
+  FirstName VARCHAR(50) NOT NULL,
+  LastName VARCHAR(50) NOT NULL,
+  UserId INT,
+  FOREIGN KEY (UserId) REFERENCES UserReg(UserId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+CREATE TABLE MemberPhoneNumber (
+  MemberId INT NOT NULL,
+  PhoneNumber VARCHAR(20) NOT NULL,
+  PRIMARY KEY (MemberId, PhoneNumber),
+  FOREIGN KEY (MemberId) REFERENCES Member(MemberId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+CREATE TABLE LibraryCard (
+  CardId INT AUTO_INCREMENT PRIMARY KEY,
+  CardNumber VARCHAR(50) UNIQUE NOT NULL,
+  IssueDate DATE NOT NULL,
+  ExpiryDate DATE NOT NULL,
+  CardStatus ENUM('active','expired','lost','suspended') DEFAULT 'active',
+  ReplacementCount INT DEFAULT 0,
+  MemberId INT NOT NULL,
+  FOREIGN KEY (MemberId) REFERENCES Member(MemberId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Category (
+  CategoryId INT AUTO_INCREMENT PRIMARY KEY,
+  CategoryName VARCHAR(100) NOT NULL,
+  Description TEXT,
+  Location VARCHAR(100),
+  IsActive BOOLEAN DEFAULT TRUE
+) ENGINE=InnoDB;
+
+CREATE TABLE Publisher (
+  PublisherId INT AUTO_INCREMENT PRIMARY KEY,
+  PublisherName VARCHAR(255) NOT NULL UNIQUE,
+  Country VARCHAR(100),
+  Email VARCHAR(100),
+  EstablishedYear INT,
+  Address VARCHAR(255)
+) ENGINE=InnoDB;
+
+CREATE TABLE PublisherPhoneNumber (
+  PublisherId INT NOT NULL,
+  PhoneNumber VARCHAR(20) NOT NULL,
+  PRIMARY KEY (PublisherId, PhoneNumber),
+  FOREIGN KEY (PublisherId) REFERENCES Publisher(PublisherId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE PublisherWebsite (
+  PublisherName VARCHAR(255) NOT NULL,
+  Website VARCHAR(255) NOT NULL,
+  PRIMARY KEY (PublisherName, Website),
+  FOREIGN KEY (PublisherName) REFERENCES Publisher(PublisherName)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Book (
+  BookId INT AUTO_INCREMENT PRIMARY KEY,
+  ISBN VARCHAR(30),
+  Title VARCHAR(255) NOT NULL,
+  PublicationYear INT,
+  Edition VARCHAR(50),
+  PageCount INT,
+  CategoryId INT,
+  PublisherId INT,
+  FOREIGN KEY (CategoryId) REFERENCES Category(CategoryId)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  FOREIGN KEY (PublisherId) REFERENCES Publisher(PublisherId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Price (
+  PageCount INT PRIMARY KEY,
+  Price DECIMAL(10,2) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE Author (
+  AuthorId INT AUTO_INCREMENT PRIMARY KEY,
+  FirstName VARCHAR(50),
+  LastName VARCHAR(50),
+  Nationality VARCHAR(100),
+  Biography TEXT,
+  Email VARCHAR(100),
+  Phone VARCHAR(20)
+) ENGINE=InnoDB;
+
+CREATE TABLE RoomCapacity (
+  RoomType VARCHAR(50) PRIMARY KEY,
+  Capacity INT NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE Room (
+  RoomId INT AUTO_INCREMENT PRIMARY KEY,
+  RoomNumber VARCHAR(50),
+  RoomType VARCHAR(50),
+  FOREIGN KEY (RoomType) REFERENCES RoomCapacity(RoomType)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Location (
+  LocationId INT AUTO_INCREMENT PRIMARY KEY,
+  Section VARCHAR(100),
+  FloorLevel VARCHAR(50),
+  RoomId INT,
+  FOREIGN KEY (RoomId) REFERENCES Room(RoomId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Shelf (
+  LocationId INT NOT NULL,
+  ShelfNo INT NOT NULL,
+  Capacity INT,
+  CurrentOccupancy INT,
+  PRIMARY KEY (LocationId, ShelfNo),
+  FOREIGN KEY (LocationId) REFERENCES Location(LocationId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Writes (
+  BookId INT NOT NULL,
+  AuthorId INT NOT NULL,
+  PRIMARY KEY (BookId, AuthorId),
+  FOREIGN KEY (BookId) REFERENCES Book(BookId)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (AuthorId) REFERENCES Author(AuthorId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE RoomReservation (
+  Status ENUM('active','completed','cancelled','expired') DEFAULT 'active',
+  StartTime DATETIME NOT NULL,
+  EndTime DATETIME NOT NULL,
+  MemberId INT NOT NULL,
+  PRIMARY KEY (MemberId, StartTime, EndTime),
+  FOREIGN KEY (MemberId) REFERENCES Member(MemberId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Loan (
+  LoanId INT AUTO_INCREMENT PRIMARY KEY,
+  Barcode VARCHAR(100) NOT NULL,
+  LoanDate DATE NOT NULL,
+  DueDate DATE NOT NULL,
+  ReturnDate DATE,
+  LoanStatus ENUM('ongoing','returned','overdue') DEFAULT 'ongoing',
+  MemberId INT NOT NULL,
+  FOREIGN KEY (Barcode) REFERENCES BookCopy(Barcode)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  FOREIGN KEY (MemberId) REFERENCES Member(MemberId)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Fine (
+  FineAmount DECIMAL(10,2),
+  FineReason VARCHAR(255),
+  IssueDate DATE NOT NULL,
+  PaymentStatus ENUM('unpaid','paid','waived') DEFAULT 'unpaid',
+  PaymentDate DATE,
+  LoanId INT NOT NULL,
+  MemberId INT,
+  PRIMARY KEY (LoanId, IssueDate),
+  FOREIGN KEY (LoanId) REFERENCES Loan(LoanId)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (MemberId) REFERENCES Member(MemberId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Payment (
+  PaymentDate DATE,
+  PaymentMethod ENUM('cash','card','online'),
+  TransactionReference VARCHAR(100) NOT NULL,
+  FineId INT, -- corresponds to Fine (LoanId + IssueDate)
+  MemberId INT NOT NULL,
+  PRIMARY KEY (TransactionReference, MemberId),
+  FOREIGN KEY (MemberId) REFERENCES Member(MemberId)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  FOREIGN KEY (FineId) REFERENCES Fine(LoanId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE PaymentAmount (
+  MemberId INT NOT NULL,
+  PaymentAmount DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (MemberId, PaymentAmount),
+  FOREIGN KEY (MemberId) REFERENCES Member(MemberId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE BookReview (
+  ReviewAt DATETIME NOT NULL,
+  BookId INT NOT NULL,
+  Rating INT,
+  ReviewText TEXT,
+  ReviewDate DATE,
+  Title VARCHAR(255),
+  PRIMARY KEY (BookId, ReviewAt),
+  FOREIGN KEY (BookId) REFERENCES Book(BookId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Notification (
+  NotificationType VARCHAR(50),
+  Message TEXT,
+  SendAt DATETIME NOT NULL,
+  IsRead BOOLEAN DEFAULT FALSE,
+  NotifyVia ENUM('email','sms','system'),
+  UserId INT NOT NULL,
+  PRIMARY KEY (UserId, SendAt),
+  FOREIGN KEY (UserId) REFERENCES UserReg(UserId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE LogEntry (
+  LogAt DATETIME NOT NULL,
+  ActionType VARCHAR(100),
+  UserId INT NOT NULL,
+  PRIMARY KEY (UserId, LogAt),
+  FOREIGN KEY (UserId) REFERENCES UserReg(UserId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Report (
+  ReportId INT AUTO_INCREMENT PRIMARY KEY,
+  ReportType VARCHAR(100),
+  GenerationDate DATE,
+  PeriodStart DATE,
+  PeriodEnd DATE,
+  StaffId INT,
+  FOREIGN KEY (StaffId) REFERENCES Staff(StaffId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Donation (
+  DonationId INT AUTO_INCREMENT PRIMARY KEY,
+  DonorName VARCHAR(255),
+  DonorContact VARCHAR(255),
+  DonorDate DATE,
+  BookId INT,
+  AcceptanceStatus ENUM('pending','accepted','rejected') DEFAULT 'pending',
+  FOREIGN KEY (BookId) REFERENCES Book(BookId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Donates (
+  DonationId INT NOT NULL,
+  BookId INT NOT NULL,
+  PRIMARY KEY (DonationId, BookId),
+  FOREIGN KEY (DonationId) REFERENCES Donation(DonationId)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (BookId) REFERENCES Book(BookId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE Vendor (
+  VendorId INT AUTO_INCREMENT PRIMARY KEY,
+  VendorName VARCHAR(255),
+  ContactPersonName VARCHAR(255),
+  Email VARCHAR(255),
+  VendorType VARCHAR(50),
+  Street VARCHAR(255),
+  ZipCode VARCHAR(20),
+  BuildingName VARCHAR(100)
+) ENGINE=InnoDB;
+
+CREATE TABLE VendorPhoneNumber (
+  VendorId INT NOT NULL,
+  PhoneNumber VARCHAR(50) NOT NULL,
+  PRIMARY KEY (VendorId, PhoneNumber),
+  FOREIGN KEY (VendorId) REFERENCES Vendor(VendorId)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+    
+CREATE TABLE BookCopy (
+  Barcode VARCHAR(100) PRIMARY KEY,
+  AcquisitionDate DATE,
+  AvailabilityStatus ENUM('available','borrowed','reserved','lost','damaged') DEFAULT 'available',
+  BookId INT,
+  VendorId INT,
+  FOREIGN KEY (BookId) REFERENCES Book(BookId)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  FOREIGN KEY (VendorId) REFERENCES Vendor(VendorId)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
